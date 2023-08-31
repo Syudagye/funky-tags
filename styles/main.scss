@@ -1,0 +1,68 @@
+@use 'variables';
+@use 'modal';
+@use 'button';
+
+* {
+    background-color: variables.$bg-color;
+    color: variables.$text-color;
+    margin: 0;
+    font-family: Nunito;
+}
+
+h1 {
+    color: variables.$text-color;
+    font-family: Acme;
+    font-size: 40px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+}
+
+h2 {
+    color: variables.$text-color;
+    text-align: center;
+    font-family: Nunito;
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: normal;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 50%;
+    margin: 16px 0;
+    & > h1 {
+        margin-right: auto;
+    }
+}
+
+.login-msg {
+    margin: 12px;
+    &--error {
+        color: #df3535;
+    }
+    &--success {
+        color: #35df60;
+    }
+}
+
+.login-info {
+    margin-right: 16px;
+
+    text-align: right;
+    font-size: 12px;
+    font-weight: 400;
+
+    & > span {
+        color: variables.$accent-color;
+    }
+}

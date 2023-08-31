@@ -1,0 +1,40 @@
+.modal {
+	/* Underlay covers entire screen. */
+	position: fixed;
+	top:0px;
+	bottom: 0px;
+	left:0px;
+	right:0px;
+	background-color:rgba(0,0,0,0.5);
+	z-index:1000;
+
+	/* Flexbox centers the .modal-content vertically and horizontally */
+	display:flex;
+	flex-direction:column;
+	align-items:center;
+
+    & > .modal-underlay {
+        /* underlay takes up the entire viewport. This is only
+        required if you want to click to dismiss the popup */
+        background-color: #0000001c;
+        position: absolute;
+        z-index: -1;
+        top:0px;
+        bottom:0px;
+        left: 0px;
+        right: 0px;
+    }
+
+    & > .modal-content {
+        /* Position visible dialog near the top of the window */
+        margin-top:10vh;
+
+        /* Sizing for visible dialog */
+        width:80%;
+        max-width:600px;
+
+        /* Display properties for visible dialog*/
+        border-radius:8px;
+        padding: 24px;
+    }
+}

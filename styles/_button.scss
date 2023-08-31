@@ -1,0 +1,32 @@
+@use 'variables';
+
+.button {
+    background-color: variables.$button-primary-color;
+    border-color: variables.$button-primary-color;
+    border-radius: 4px;
+    border-style: solid;
+    border-width: 1px;
+    padding: 6px 15px;
+
+    color: variables.$text-color;
+    font-family: Nunito;
+    font-size: 15px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    cursor: pointer;
+
+    filter: drop-shadow(0 0 0 variables.$button-primary-color);
+    transition-duration: .5s;
+    transition-property: filter;
+
+    &:hover {
+        filter: drop-shadow(0 0 4px variables.$button-primary-color);
+        transition-duration: .5s;
+        transition-property: filter;
+    }
+
+    &--secondary {
+        background-color: variables.$bg-color;
+    }
+}
