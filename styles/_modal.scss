@@ -1,3 +1,5 @@
+@use 'variables';
+
 .modal {
 	/* Underlay covers entire screen. */
 	position: fixed;
@@ -36,5 +38,7 @@
         /* Display properties for visible dialog*/
         border-radius:8px;
         padding: 24px;
+
+        background-color: variables.$bg-color;
     }
 }
