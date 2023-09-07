@@ -26,8 +26,13 @@
         {% endmatch %}
     </header>
     <main>
-        <div hx-get="/tags" hx-trigger="load">
-            Loading
+        <div id="presentation">
+            <h2>This page is a collection of funny usernames me and my friends found in the wild.</h2>
+            <p>If you want to participate to the gathering effort, feel free to ask me, and I will maybe create you an account :)</p>
+        </div>
+
+        <div hx-get="/tags" hx-trigger="load" hx-swap="outerHTML">
+            Loading...
         </div>
     </main>
 </body>

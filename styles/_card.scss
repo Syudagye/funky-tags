@@ -1,0 +1,33 @@
+@use 'variables';
+
+.card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    background-color: variables.$card-bg;
+    border-radius: 4px;
+    padding: 6px;
+
+    &--selected {
+        border-width: 1px;
+        border-style: solid;
+        border-color: variables.$accent-color;
+    }
+}
+
+.card__username {
+    color: variables.$text-color;
+    font-size: 16px;
+    font-weight: 600;
+    margin-right: auto;
+}
+
+.card__context {
+    color: variables.$text-color;
+    font-size: 14px;
+    font-weight: 300;
+
+    & > span {
+        color: variables.$accent-color;
+    }
+}

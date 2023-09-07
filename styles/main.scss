@@ -1,9 +1,10 @@
 @use 'variables';
 @use 'modal';
 @use 'button';
+@use 'card';
 
 * {
-    background-color: variables.$bg-color;
+    background-color: inherit;
     color: variables.$text-color;
     margin: 0;
     font-family: Nunito;
@@ -29,6 +30,7 @@ h2 {
 }
 
 body {
+    background-color: variables.$bg-color;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -64,5 +66,59 @@ header {
 
     & > span {
         color: variables.$accent-color;
+    }
+}
+
+main {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#presentation {
+    display: flex;
+    flex-direction: column;
+    width: 30%;
+    text-align: center;
+    align-items: center;
+    margin-top: 64px;
+    margin-bottom: 128px;
+
+    & > h2 {
+        font-size: 20px;
+        font-weight: 500;
+        margin-bottom: 24px;
+    }
+    & > p {
+        font-size: 16px;
+        font-weight: 300;
+    }
+}
+
+.tags {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 40%;
+
+    &__table {
+        width: 100%;
+
+        > tbody > tr {
+            margin: 8px 0;
+        }
+    }
+
+    &__count {
+        margin-left: auto;
+        font-size: 12px;
+    }
+
+    &__none {
+        margin-top: 64px;
+        font-size: 16px;
+        font-weight: 300;
+        font-style: italic;
     }
 }

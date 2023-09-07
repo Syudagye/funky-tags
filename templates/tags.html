@@ -1,0 +1,25 @@
+{% set num = tags.len() %}
+<div class="tags">
+    <div class="tags__count">
+        {% if num <= 1 %}
+        Loaded {{ num }} gamertag
+        {% else %}
+        Loaded {{ num }} gamertags
+        {% endif %}
+    </div>
+    {% if num > 0 %}
+    <table class="tags__table">
+        {% for tag in tags %}
+        <tr class="card">
+            <td class="card__username">{{ tag.username }}</td>
+            <td class="card__context">
+                found by <span>{{ tag.ladname }}</span>
+                in <span>{{ tag.gamename }}</span>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <div class="tags__none">No gamertag found :(</div>
+    {% endif %}
+</div>
