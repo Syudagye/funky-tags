@@ -48,7 +48,7 @@ header {
     }
 }
 
-.login-msg {
+.form-msg {
     margin: 12px;
     &--error {
         color: #df3535;
@@ -121,5 +121,25 @@ main {
         font-size: 16px;
         font-weight: 300;
         font-style: italic;
+    }
+}
+
+.controls {
+    width: 40%;
+    display: flex;
+    flex-direction: row;
+    margin-bottom: 12px;
+
+    &__listcontrols {
+        margin-left: auto;
+    }
+}
+
+.listcontrols {
+    display: flex;
+    flex-direction: row;
+
+    &__sort {
+        margin-right: 6px;
     }
 }

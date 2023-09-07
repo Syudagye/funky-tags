@@ -1,6 +1,6 @@
 @use 'variables';
 
-input[type=text], input[type=password] {
+input[type=text], input[type=password], select {
     background-color: variables.$bg-color;
     border-color: variables.$text-color;
     border-radius: 4px;

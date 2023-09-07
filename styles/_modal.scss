@@ -15,7 +15,7 @@
 	flex-direction:column;
 	align-items:center;
 
-    & > .modal-underlay {
+    &__underlay {
         /* underlay takes up the entire viewport. This is only
         required if you want to click to dismiss the popup */
         background-color: #0000001c;
@@ -27,7 +27,7 @@
         right: 0px;
     }
 
-    & > .modal-content {
+    &__content {
         /* Position visible dialog near the top of the window */
         margin-top:10vh;
 

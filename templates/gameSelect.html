@@ -1,0 +1,19 @@
+{% if new %}
+<label for="newgame">New game name</label>
+<br>
+<input type="text" name="newgame" required>
+<button hx-get="/tags/new?game=list" class="button button--secondary" style="margin-left: 12px;">
+    select existing game
+</button>
+{% else %}
+<label for="game">The game you found it in</label>
+<br>
+<select name="game" id="gameselect" hx-get="/tags/new" required>
+    <option selected disabled>Select a game</option>
+    {% for game in games %}
+    <option value="{{ game.id }}" {% if game.selected %} selected {% endif %}>{{ game.name }}</option>
+    {% endfor %}
+    <option disabled>-----</option>
+    <option value="new">New Game</option>
+</select>
+{% endif %}

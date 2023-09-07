@@ -1,0 +1,17 @@
+<div id="newtag-modal" class="modal" _="on closeModal remove me">
+    <div class="modal__underlay" _="on click trigger closeModal"></div>
+    <div class="modal__content">
+        <h1>New Gamertag</h1>
+        <form id="newtag-form" hx-post="/tags/new" hx-trigger="submit" hx-target="#form-msg">
+            <label for="gamertag">Gamertag (the epic username you found)</label>
+            <br>
+            <input type="text" name="gamertag" required>
+            <br><br>
+            <div id="game" hx-get="/tags/new?game=list" hx-trigger="load" hx-target="this"></div>
+            <br><br>
+            <button class="button" type="submit">add</button>
+            <button class="button button--secondary" _="on click trigger closeModal">cancel</button>
+        </form>
+        <div id="form-msg"></div>
+    </div>
+</div>

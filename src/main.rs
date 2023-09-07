@@ -2,16 +2,15 @@ use std::{env, process::exit};
 
 use askama::Template;
 use rocket::{
-    form::Form,
     fs::{relative, FileServer},
     get,
-    http::{ContentType, Cookie, CookieJar},
-    launch, post, routes, FromForm, State,
+    http::{ContentType, CookieJar},
+    launch, routes, State,
 };
 use sqlx::SqlitePool;
-use tracing::{error, info, trace, warn};
+use tracing::{error, info, warn};
 
-use crate::{auth::TokenData, error::FunkyError};
+use crate::error::FunkyError;
 
 mod auth;
 mod error;
@@ -94,7 +93,10 @@ async fn launch() -> _ {
                 login::get_login,
                 login::login,
                 login::logout,
-                tags::get_tags
+                tags::get_tags,
+                tags::get_tags_form,
+                tags::get_new_game_field,
+                tags::post_new_tag,
             ],
         )
         .mount("/assets", FileServer::from(relative!("assets")))

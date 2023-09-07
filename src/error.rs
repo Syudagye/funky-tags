@@ -1,4 +1,8 @@
-use rocket::{response::{Responder, self}, Request, http::Status};
+use rocket::{
+    http::Status,
+    response::{self, Responder},
+    Request,
+};
 use thiserror::Error;
 use tracing::error;
 
@@ -10,8 +14,8 @@ pub enum FunkyError {
     #[error("An error occured when rendering the template: {0}")]
     TemplatingError(#[from] askama::Error),
 
-    // #[error(transparent)]
-    // ServerError(#[from] actix_web::Error),
+    #[error("You are not allowed to do this")]
+    Unauthorized,
 }
 
 impl<'r> Responder<'r, 'static> for FunkyError {
@@ -20,7 +24,8 @@ impl<'r> Responder<'r, 'static> for FunkyError {
         match self {
             FunkyError::DatabaseError(_) | FunkyError::TemplatingError(_) => {
                 Err(Status::InternalServerError)
-            },
+            }
+            FunkyError::Unauthorized => Err(Status::Unauthorized),
         }
     }
 }

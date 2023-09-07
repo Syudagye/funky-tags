@@ -14,12 +14,12 @@
 </head>
 
 <body>
-    <div id="login-form-placeholder"></div>
+    <div id="modal-container"></div>
     <header>
         <h1>FunkyTags</h1>
         {% match login_state %}
         {% when LoginState::None %}
-        <button hx-get="/login" hx-target="body" hx-swap="beforeend" class="button">login</button>
+        <button hx-get="/login" hx-target="#modal-container" class="button">login</button>
         {% when LoginState::Connected with {username} %}
         <div class="login-info">currently logged in as <span>{{ username }}</span></div>
         <button hx-get="/logout" hx-target="body" hx-swap="beforeend" class="button button--secondary">logout</button>
@@ -29,6 +29,18 @@
         <div id="presentation">
             <h2>This page is a collection of funny usernames me and my friends found in the wild.</h2>
             <p>If you want to participate to the gathering effort, feel free to ask me, and I will maybe create you an account :)</p>
+        </div>
+
+        <div class="controls">
+            {% match login_state %}
+            {% when LoginState::Connected with {username} %}
+            <button hx-get="/tags/new" hx-target="#modal-container" class="button controls__new">new</button>
+            {% when LoginState::None %}
+            {% endmatch %}
+            <div class="controls__listcontrols listcontrols">
+                <button class="button button--secondary listcontrols__sort"><img src="" alt=""></button>
+                <button class="button button--secondary listcontrols__filter"><img src="" alt=""></button>
+            </div>
         </div>
 
         <div hx-get="/tags" hx-trigger="load" hx-swap="outerHTML">

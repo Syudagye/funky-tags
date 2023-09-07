@@ -1,9 +1,18 @@
 use askama::Template;
-use rocket::{http::{ContentType, CookieJar, Cookie}, FromForm, State, get, post, form::Form};
+use rocket::{
+    form::Form,
+    get,
+    http::{ContentType, Cookie, CookieJar},
+    post, FromForm, State,
+};
 use sqlx::SqlitePool;
 use tracing::trace;
 
-use crate::{error::FunkyError, utils, auth::{self, TokenData}};
+use crate::{
+    auth::{self, TokenData},
+    error::FunkyError,
+    utils,
+};
 
 #[derive(Template)]
 #[template(path = "loginForm.html")]
@@ -27,33 +36,24 @@ pub async fn login(
     pool: &State<SqlitePool>,
     cookies: &CookieJar<'_>,
 ) -> Result<(ContentType, String), (ContentType, String)> {
-    let error = Err((
-        ContentType::HTML,
-        String::from(
-            r#"<div class="login-msg login-msg--error">Your are not allowed here, go away >:(</span>"#,
-        ),
-    ));
-
     let inner_form = creds.into_inner();
     trace!(form = ?inner_form, "Login requested.");
 
-    let lad = match sqlx::query!("SELECT * FROM Lad WHERE username = ?", inner_form.username)
+    let lad = sqlx::query!("SELECT * FROM Lad WHERE username = ?", inner_form.username)
         .fetch_one(pool.inner())
         .await
-    {
-        Ok(lad) => lad,
-        Err(e) => {
+        .map_err(|e| {
             trace!(error = ?e, "Requested login credentials not found in database, rejecting login.");
-            return error;
-        }
-    };
+            utils::build_form_msg(Err("Your are not allowed here, go away >:("))
+        })?;
+
     trace!(?lad, "Succesfully queried user credentials from database");
 
     let form_passwd_hash = utils::sha256_str(inner_form.passwd);
 
     if form_passwd_hash != lad.passwd_hash {
         trace!("Invalid password, rejecting login.");
-        return error;
+        return Err(utils::build_form_msg(Err("Your are not allowed here, go away >:(")));
     }
 
     cookies.add(Cookie::new(
@@ -61,12 +61,7 @@ pub async fn login(
         auth::sign(TokenData { user_id: lad.id }),
     ));
 
-    Err((
-        ContentType::HTML,
-        String::from(
-            r#"<div class="login-msg login-msg--success" hx-on:htmx:load="location.reload()">Login successful :D</div>"#,
-        ),
-    ))
+    Ok(utils::build_form_msg(Ok("Login successful :D")))
 }
 
 #[get("/logout")]
