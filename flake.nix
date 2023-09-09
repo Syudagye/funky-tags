@@ -26,7 +26,7 @@
             };
           });
 
-      nixosModule = { lib, pkgs, config, ... }:
+      nixosModules.default = { lib, pkgs, config, ... }:
         with lib;
         let
           cfg = config.services.funky-tags;
@@ -36,7 +36,7 @@
           options.services.funky-tags = {
             enable = mkEnableOption "funky-tags web app";
             data = mkOption {
-              type = types.path;
+              type = types.str;
               description = "Location of the data directory";
             };
             port = mkOption {
@@ -45,12 +45,12 @@
               default = 8000;
             };
             secretFile = mkOption {
-              type = types.path;
+              type = types.str;
               description = ''
                 File containing the secret key for signing JWT tokens.
                 Defaults to `$\{services.funky-tags.data\}/secret`
               '';
-              default = cfg.data + /secret;
+              default = "${cfg.data}/secret";
             };
             enableNginx = mkOption {
               type = types.bool;
@@ -68,16 +68,17 @@
               serviceConfig.ExecStart = "${pkg}/bin/funky-tags";
               environment = {
                 DATABASE_URL = "sqlite:${cfg.data}/gamertags.db";
-                JWT_SECRET_FILE = "${cfg.secretFile}";
-                PORT = cfg.port;
+                JWT_SECRET_FILE = cfg.secretFile;
+                PORT = "${toString cfg.port}";
               };
+              serviceConfig.StandardOutput = "journal+console";
             };
 
-            nginx.virtualHosts.${cfg.vhost} = mkIf cfg.enableNginx {
+            services.nginx.virtualHosts.${cfg.vhost} = mkIf cfg.enableNginx {
               forceSSL = true;
               enableACME = true;
-              location."/" = {
-                proxyPass = "http://127.0.0.1:${cfg.port}";
+              locations."/" = {
+                proxyPass = "http://127.0.0.1:${toString cfg.port}";
               };
             };
           };
