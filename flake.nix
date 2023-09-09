@@ -50,7 +50,7 @@
                 File containing the secret key for signing JWT tokens.
                 Defaults to `$\{services.funky-tags.data\}/secret`
               '';
-              default = ${cfg.data} + /secret;
+              default = cfg.data + /secret;
             };
             enableNginx = mkOption {
               type = types.bool;
