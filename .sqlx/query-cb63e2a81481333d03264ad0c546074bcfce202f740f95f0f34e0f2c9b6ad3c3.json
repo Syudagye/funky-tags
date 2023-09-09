@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO Gamertag (username, poster, game) VALUES (?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "cb63e2a81481333d03264ad0c546074bcfce202f740f95f0f34e0f2c9b6ad3c3"
+}

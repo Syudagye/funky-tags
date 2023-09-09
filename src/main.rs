@@ -12,6 +12,7 @@ use tracing::{error, info, warn};
 
 use crate::error::FunkyError;
 
+mod assets;
 mod auth;
 mod error;
 mod login;
@@ -84,20 +85,18 @@ async fn launch() -> _ {
         error!(error = ?e, "An error occured when doing database migration.");
     }
 
-    rocket::build()
-        .manage(pool)
-        .mount(
-            "/",
-            routes![
-                root,
-                login::get_login,
-                login::login,
-                login::logout,
-                tags::get_tags,
-                tags::get_tags_form,
-                tags::get_new_game_field,
-                tags::post_new_tag,
-            ],
-        )
-        .mount("/assets", FileServer::from(relative!("assets")))
+    rocket::build().manage(pool).mount(
+        "/",
+        routes![
+            root,
+            assets::serve_css,
+            login::get_login,
+            login::login,
+            login::logout,
+            tags::get_tags,
+            tags::get_tags_form,
+            tags::get_new_game_field,
+            tags::post_new_tag,
+        ],
+    )
 }

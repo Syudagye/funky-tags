@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, fs};
 
 use hmac::{Hmac, Mac};
 use jwt::{SignWithKey, VerifyWithKey};
@@ -9,8 +9,9 @@ pub struct TokenData {
 }
 
 fn get_key_from_env() -> Option<Hmac<Sha256>> {
-    let secret = std::env::var("JWT_SECRET").ok()?;
-    Some(Hmac::new_from_slice(secret.as_bytes()).ok()?)
+    let secret_file = std::env::var("JWT_SECRET_FILE").ok()?;
+    let data = fs::read(secret_file).ok()?;
+    Some(Hmac::new_from_slice(&data).ok()?)
 }
 
 pub fn sign(data: TokenData) -> String {

@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT username FROM Lad WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "username",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "5cb4e2c6866ebf30d38e8522a535e7af1c9d06f25558eb3a998f24c3f43b0dfb"
+}

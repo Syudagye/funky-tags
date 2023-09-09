@@ -1,4 +1,5 @@
 /target
-assets/style.css
 gamertags.db*
 .env
+/result
+secret

@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT\n                Gamertag.username as username,\n                Lad.username as ladname,\n                Game.name as gamename\n            FROM Gamertag\n            JOIN Lad on Lad.id = Gamertag.poster\n            JOIN Game on Game.id = Gamertag.game\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "username",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "ladname",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "gamename",
+        "ordinal": 2,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "199124fdcf513d9e9aa53439de527fb5cd85d46a4bee6149ac07756d53c27f26"
+}
