@@ -67,7 +67,7 @@
             systemd.services.funky-tags = {
               serviceConfig.ExecStart = "${pkg}/bin/funky-tags";
               environment = {
-                DATABASE_URL = "sqlite:${cfg.data}/gamertags.db";
+                DATABASE_URL = "file:${cfg.data}/gamertags.db";
                 JWT_SECRET_FILE = cfg.secretFile;
                 PORT = "${toString cfg.port}";
               };
