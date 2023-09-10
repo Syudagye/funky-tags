@@ -13,7 +13,7 @@ use axum::{
 };
 use sqlx::SqlitePool;
 use tower_cookies::{CookieManagerLayer, Cookies};
-use tracing::{error, info, warn, Level};
+use tracing::{error, info, warn, Level, debug};
 use utils::HtmlTemplate;
 
 use crate::error::FunkyError;
@@ -86,6 +86,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         error!("DATABASE_URL environment variable not found.");
         exit(1);
     };
+    debug!(?url);
+
     let db_pool = match SqlitePool::connect(&url).await {
         Ok(p) => p,
         Err(e) => {
