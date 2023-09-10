@@ -1,7 +1,6 @@
-use rocket::{
-    http::Status,
-    response::{self, Responder},
-    Request,
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
 };
 use thiserror::Error;
 use tracing::error;
@@ -11,21 +10,26 @@ pub enum FunkyError {
     #[error("An error occured with the database: {0}")]
     DatabaseError(#[from] sqlx::Error),
 
-    #[error("An error occured when rendering the template: {0}")]
-    TemplatingError(#[from] askama::Error),
-
     #[error("You are not allowed to do this")]
     Unauthorized,
 }
 
-impl<'r> Responder<'r, 'static> for FunkyError {
-    fn respond_to(self, _request: &'r Request<'_>) -> response::Result<'static> {
-        error!(error = ?self);
+impl IntoResponse for FunkyError {
+    fn into_response(self) -> Response {
         match self {
-            FunkyError::DatabaseError(_) | FunkyError::TemplatingError(_) => {
-                Err(Status::InternalServerError)
+            FunkyError::DatabaseError(e) => {
+                error!(error = ?e, "Database error.");
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "The server encountered an error",
+                )
+                    .into_response()
             }
-            FunkyError::Unauthorized => Err(Status::Unauthorized),
+            FunkyError::Unauthorized => (
+                StatusCode::UNAUTHORIZED,
+                "You are not authorized to do this",
+            )
+                .into_response(),
         }
     }
 }

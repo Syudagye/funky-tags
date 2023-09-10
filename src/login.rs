@@ -1,59 +1,57 @@
 use askama::Template;
-use rocket::{
-    form::Form,
-    get,
-    http::{ContentType, Cookie, CookieJar},
-    post, FromForm, State,
-};
-use sqlx::SqlitePool;
+use axum::{extract::State, response::{IntoResponse, Html}, Form};
+use serde::Deserialize;
+use tower_cookies::{Cookies, Cookie};
 use tracing::trace;
 
 use crate::{
     auth::{self, TokenData},
-    error::FunkyError,
-    utils,
+    utils::{self, FormMessage, HtmlTemplate},
+    FunkyState,
 };
 
 #[derive(Template)]
 #[template(path = "loginForm.html")]
 struct LoginFormTemplate;
 
-#[get("/login")]
-pub fn get_login() -> Result<(ContentType, String), FunkyError> {
-    let form = LoginFormTemplate;
-    Ok(form.render().map(|s| (ContentType::HTML, s))?)
+#[axum::debug_handler]
+pub async fn get_login() -> impl IntoResponse {
+    HtmlTemplate(LoginFormTemplate)
 }
 
-#[derive(Debug, FromForm)]
-pub struct LoginForm<'a> {
-    username: &'a str,
-    passwd: &'a str,
+#[derive(Debug, Deserialize)]
+pub struct LoginForm {
+    username: String,
+    passwd: String,
 }
 
-#[post("/login", data = "<creds>")]
+#[axum::debug_handler]
 pub async fn login(
-    creds: Form<LoginForm<'_>>,
-    pool: &State<SqlitePool>,
-    cookies: &CookieJar<'_>,
-) -> Result<(ContentType, String), (ContentType, String)> {
-    let inner_form = creds.into_inner();
-    trace!(form = ?inner_form, "Login requested.");
+    State(state): State<FunkyState>,
+    cookies: Cookies,
+    Form(creds): Form<LoginForm>,
+) -> impl IntoResponse {
+    trace!(?creds, "Login requested.");
+    let err = FormMessage::Err("Your are not allowed here, go away >:(");
 
-    let lad = sqlx::query!("SELECT * FROM Lad WHERE username = ?", inner_form.username)
-        .fetch_one(pool.inner())
+    let lad = match sqlx::query!("SELECT * FROM Lad WHERE username = ?", creds.username)
+        .fetch_one(&state.db_pool)
         .await
-        .map_err(|e| {
+    {
+        Ok(l) => l,
+        Err(e) => {
             trace!(error = ?e, "Requested login credentials not found in database, rejecting login.");
-            utils::build_form_msg(Err("Your are not allowed here, go away >:("))
-        })?;
+            return err;
+        }
+    };
 
     trace!(?lad, "Succesfully queried user credentials from database");
 
-    let form_passwd_hash = utils::sha256_str(inner_form.passwd);
+    let form_passwd_hash = utils::sha256_str(creds.passwd);
 
     if form_passwd_hash != lad.passwd_hash {
         trace!("Invalid password, rejecting login.");
-        return Err(utils::build_form_msg(Err("Your are not allowed here, go away >:(")));
+        return err;
     }
 
     cookies.add(Cookie::new(
@@ -61,14 +59,11 @@ pub async fn login(
         auth::sign(TokenData { user_id: lad.id }),
     ));
 
-    Ok(utils::build_form_msg(Ok("Login successful :D")))
+    FormMessage::Ok("Login successful :D")
 }
 
-#[get("/logout")]
-pub async fn logout(cookies: &CookieJar<'_>) -> (ContentType, String) {
+#[axum::debug_handler]
+pub async fn logout(cookies: Cookies) -> impl IntoResponse {
     cookies.remove(Cookie::named("token"));
-    (
-        ContentType::HTML,
-        String::from(r#"<div hx-on:htmx:load="location.reload()"></div>"#),
-    )
+    Html(r#"<div hx-on:htmx:load="location.reload()"></div>"#)
 }

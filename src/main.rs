@@ -1,14 +1,20 @@
-use std::{env, process::exit};
+use std::{
+    env,
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    process::exit,
+};
 
 use askama::Template;
-use rocket::{
-    fs::{relative, FileServer},
-    get,
-    http::{ContentType, CookieJar},
-    launch, routes, State,
+use axum::{
+    extract::State,
+    response::IntoResponse,
+    routing::{get, post},
+    Router, Server,
 };
 use sqlx::SqlitePool;
-use tracing::{error, info, warn};
+use tower_cookies::{CookieManagerLayer, Cookies};
+use tracing::{error, info, warn, Level};
+use utils::HtmlTemplate;
 
 use crate::error::FunkyError;
 
@@ -18,6 +24,11 @@ mod error;
 mod login;
 mod tags;
 mod utils;
+
+#[derive(Clone)]
+pub struct FunkyState {
+    db_pool: SqlitePool,
+}
 
 #[derive(Debug)]
 enum LoginState {
@@ -31,11 +42,11 @@ struct IndexTemplate {
     login_state: LoginState,
 }
 
-#[get("/")]
+#[axum::debug_handler]
 async fn root(
-    pool: &State<SqlitePool>,
-    cookies: &CookieJar<'_>,
-) -> Result<(ContentType, String), FunkyError> {
+    State(state): State<FunkyState>,
+    cookies: Cookies,
+) -> Result<impl IntoResponse, FunkyError> {
     let auth_data = cookies
         .get("token")
         .map(|token| auth::verify(token.value()))
@@ -45,7 +56,7 @@ async fn root(
         login_state: match auth_data {
             Some(data) => {
                 let lad = sqlx::query!("SELECT username FROM Lad WHERE id = ?", data.user_id)
-                    .fetch_one(pool.inner())
+                    .fetch_one(&state.db_pool)
                     .await?;
                 LoginState::Connected {
                     username: lad.username,
@@ -55,12 +66,16 @@ async fn root(
         },
     };
 
-    Ok(index.render().map(|s| (ContentType::HTML, s))?)
+    Ok(HtmlTemplate(index))
 }
 
-#[launch]
-async fn launch() -> _ {
-    tracing_subscriber::fmt().finish();
+// #[launch]
+// async fn launch() -> _ {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    tracing_subscriber::fmt()
+        .with_max_level(Level::DEBUG)
+        .init();
     info!("Logging initialized");
 
     if let Err(e) = dotenvy::dotenv() {
@@ -71,7 +86,7 @@ async fn launch() -> _ {
         error!("DATABASE_URL environment variable not found.");
         exit(1);
     };
-    let pool = match SqlitePool::connect(&url).await {
+    let db_pool = match SqlitePool::connect(&url).await {
         Ok(p) => p,
         Err(e) => {
             error!(error = ?e, "Unable to initialize database pool.");
@@ -81,22 +96,39 @@ async fn launch() -> _ {
     info!("Database Connection Pool setup");
 
     // Idk, is it needed ?
-    if let Err(e) = sqlx::migrate!().run(&pool).await {
+    if let Err(e) = sqlx::migrate!().run(&db_pool).await {
         error!(error = ?e, "An error occured when doing database migration.");
     }
 
-    rocket::build().manage(pool).mount(
-        "/",
-        routes![
-            root,
-            assets::serve_css,
-            login::get_login,
-            login::login,
-            login::logout,
-            tags::get_tags,
-            tags::get_tags_form,
-            tags::get_new_game_field,
-            tags::post_new_tag,
-        ],
-    )
+    // Building axum app
+    let app = Router::new()
+        // ROUTES
+        // Base routes
+        .route("/", get(root))
+        .route("/assets/*file", get(assets::serve_asset))
+        // Login
+        .route("/login", get(login::get_login))
+        .route("/login", post(login::login))
+        .route("/logout", get(login::logout))
+        // Tags
+        .route("/tags", get(tags::get_tags))
+        //TODO: Handler for overlapping routes
+        .route(
+            "/tags/new",
+            get(tags::get_tags_form).post(tags::post_new_tag),
+        )
+        .layer(CookieManagerLayer::new())
+        .with_state(FunkyState { db_pool });
+
+    let port = match env::var("PORT") {
+        Ok(p) => p.parse().unwrap_or(8000),
+        Err(_) => {
+            info!("PORT not set, using default port 8000");
+            8000
+        }
+    };
+    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), port);
+    info!("Listening on {}", addr);
+
+    Ok(Server::bind(&addr).serve(app.into_make_service()).await?)
 }

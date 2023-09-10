@@ -1,13 +1,21 @@
-use askama::Template;
-use rocket::{
-    form::Form,
-    get,
-    http::{ContentType, CookieJar},
-    post, FromForm, State,
-};
-use sqlx::SqlitePool;
+use std::collections::HashMap;
 
-use crate::{auth, error::FunkyError, utils};
+use askama::Template;
+use axum::{
+    extract::{Query, State},
+    response::IntoResponse,
+    Form,
+};
+use serde::Deserialize;
+use tower_cookies::Cookies;
+use tracing::error;
+
+use crate::{
+    auth,
+    error::FunkyError,
+    utils::{FormMessage, HtmlTemplate},
+    FunkyState,
+};
 
 #[derive(Template)]
 #[template(path = "tags.html")]
@@ -21,8 +29,8 @@ pub struct Gamertag {
     gamename: String,
 }
 
-#[get("/tags")]
-pub async fn get_tags(pool: &State<SqlitePool>) -> Result<(ContentType, String), FunkyError> {
+#[axum::debug_handler]
+pub async fn get_tags(State(state): State<FunkyState>) -> Result<impl IntoResponse, FunkyError> {
     let tags = sqlx::query_as!(
         Gamertag,
         "
@@ -35,24 +43,15 @@ pub async fn get_tags(pool: &State<SqlitePool>) -> Result<(ContentType, String),
             JOIN Game on Game.id = Gamertag.game
         "
     )
-    .fetch_all(&**pool)
+    .fetch_all(&state.db_pool)
     .await?;
 
-    let html = TagsTemplate { tags };
-
-    Ok(html.render().map(|s| (ContentType::HTML, s))?)
+    Ok(HtmlTemplate(TagsTemplate { tags }))
 }
 
 #[derive(Template)]
 #[template(path = "tagsForm.html")]
 pub struct NewTagFormTemplate;
-
-#[get("/tags/new")]
-pub async fn get_tags_form() -> Result<(ContentType, String), FunkyError> {
-    let form = NewTagFormTemplate;
-
-    Ok(form.render().map(|s| (ContentType::HTML, s))?)
-}
 
 #[derive(Template)]
 #[template(path = "gameSelect.html")]
@@ -67,12 +66,18 @@ pub struct Game {
     selected: bool,
 }
 
-#[get("/tags/new?<game>")]
-pub async fn get_new_game_field(
-    pool: &State<SqlitePool>,
-    game: &str,
-) -> Result<(ContentType, String), FunkyError> {
-    let newgame = match game {
+#[axum::debug_handler]
+pub async fn get_tags_form(
+    Query(params): Query<HashMap<String, String>>,
+    State(state): State<FunkyState>,
+) -> Result<impl IntoResponse, FunkyError> {
+    // If there is no game param, serve the form
+    let Some(game) = params.get("game") else {
+        let form = NewTagFormTemplate;
+        return Ok(HtmlTemplate(form).into_response());
+    };
+
+    let newgame = match game.as_str() {
         "new" => NewGameTemplate {
             new: true,
             games: vec![],
@@ -80,7 +85,7 @@ pub async fn get_new_game_field(
         _ => NewGameTemplate {
             new: false,
             games: sqlx::query!("SELECT * FROM Game")
-                .fetch_all(&**pool)
+                .fetch_all(&state.db_pool)
                 .await?
                 .into_iter()
                 .map(|row| Game {
@@ -92,51 +97,59 @@ pub async fn get_new_game_field(
         },
     };
 
-    Ok(newgame.render().map(|s| (ContentType::HTML, s))?)
+    Ok(HtmlTemplate(newgame).into_response())
 }
 
-#[derive(FromForm)]
-pub struct NewGamertag<'a> {
-    gamertag: &'a str,
+#[derive(Deserialize)]
+pub struct NewGamertag {
+    gamertag: String,
     game: Option<i64>,
-    newgame: Option<&'a str>,
+    newgame: Option<String>,
 }
 
-#[post("/tags/new", data = "<body>")]
+#[axum::debug_handler]
 pub async fn post_new_tag(
-    pool: &State<SqlitePool>,
-    cookies: &CookieJar<'_>,
-    body: Form<NewGamertag<'_>>,
-) -> Result<(ContentType, String), (ContentType, String)> {
-    let auth_data = cookies
+    State(state): State<FunkyState>,
+    cookies: Cookies,
+    Form(body): Form<NewGamertag>,
+) -> impl IntoResponse {
+    let Some(auth_data) = cookies
         .get("token")
         .map(|token| auth::verify(token.value()))
         .flatten()
-        .ok_or(utils::build_form_msg(Err(
-            "You are not authorized to add new tags :p",
-        )))?;
+    else {
+        return FormMessage::Err("You are not authorized to add new tags :p");
+    };
 
     let game_id = match (body.newgame, body.game) {
         (Some(new_game), None) => {
-            sqlx::query!("INSERT INTO Game (name) VALUES (?) RETURNING id", new_game)
-                .fetch_one(&**pool)
+            match sqlx::query!("INSERT INTO Game (name) VALUES (?) RETURNING id", new_game)
+                .fetch_one(&state.db_pool)
                 .await
-                .map_err(|_| utils::build_form_msg(Err("An error occured :c")))?
-                .id
+            {
+                Ok(q) => q.id,
+                Err(e) => {
+                    error!(error = ?e, "An error occured when issueing a query.");
+                    return FormMessage::Err("An error occured :c");
+                }
+            }
         }
         (None, Some(game)) => game,
-        _ => Err(utils::build_form_msg(Err("Malformed request")))?,
+        _ => return FormMessage::Err("Malformed request"),
     };
 
-    sqlx::query!(
+    if let Err(e) = sqlx::query!(
         "INSERT INTO Gamertag (username, poster, game) VALUES (?, ?, ?)",
         body.gamertag,
         auth_data.user_id,
         game_id
     )
-    .execute(&**pool)
+    .execute(&state.db_pool)
     .await
-    .map_err(|_| utils::build_form_msg(Err("An error occured :c")))?;
+    {
+        error!(error = ?e, "An error occured when issueing a query.");
+        return FormMessage::Err("An error occured :c");
+    }
 
-    Ok(utils::build_form_msg(Ok("Name Added !")))
+    FormMessage::Ok("Name added !")
 }
