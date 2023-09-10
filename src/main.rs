@@ -90,6 +90,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Ok(p) => p,
         Err(e) => {
             error!(error = ?e, "Unable to initialize database pool.");
+            error!("The database file must exist before running the app.");
+            error!("You can create it with `touch /path/to/file.db`");
             exit(1);
         }
     };
